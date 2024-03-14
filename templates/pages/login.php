@@ -10,7 +10,7 @@
 	</div>
 
 	<div class="button">
-		<button type="submit" >Sign in</button>
+		<button type="submit">Sign in</button>
 	</div>
 
 </form>
