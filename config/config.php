@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
 	'db' => [
 		'host'  => 'localhost',
-		'database' => 'web_app_test',
+		'database' => 'BWT',
 		'user' => 'budget_app_test_admin',
 		'password' => '123456'
 		]

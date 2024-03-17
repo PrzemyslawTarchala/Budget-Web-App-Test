@@ -1,52 +1,78 @@
 <?php
 
+declare(strict_types=1);
+
 session_start();
 
 include("../Utils/debug.php");
-
 require_once("../request.php");
-$config = require_once("../../config/config.php");
 
 use layer_1\request;
-// use PDO;
 
-$request = new Request($_GET, $_POST, $_SERVER);
+(new LoginValidation()) -> loginRequest();
 
-$username = $request->postParam('username');
-$password = $request->postParam('password');
+class LoginValidation
+{
+	private $request;
+	private $conn;
+	private $username;
+	private $password;
+	private $result;
 
-$dsn = "mysql:dbname={$config['db']['database']};host={$config['db']['host']}";
+	public function __construct()
+	{
+		$this->request = new Request($_GET, $_POST, $_SERVER);
+	}
 
-$conn = new PDO(
-	$dsn,
-	$config['db']['user'],
-	$config['db']['password'],
-	[
-		PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION //Przy polaczeniu ustwaione wszystkie "error'y" będa traktowane jako "exception"
-	]
-);
+	public function loginRequest(): void
+	{
+		$this->createConnToDB();
+		$this->setLoginData();
+		$this->makeQuery();
+		$this->loginValidation();
+	}
 
-$query = "SELECT users.id FROM users WHERE username = :username AND password = :password";
+	private function createConnToDB(): void
+	{
+		$config = require_once("../../config/config.php");
+		$dsn = "mysql:dbname={$config['db']['database']};host={$config['db']['host']}";
+		$this->conn = new PDO(
+			$dsn,
+			$config['db']['user'],
+			$config['db']['password'],
+			[
+				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+			]
+		);
+	}
 
-$stmt = $conn->prepare($query);
-$stmt->bindParam(':username', $username);
-$stmt->bindParam(':password', $password);
-$stmt->execute();
+	private function setLoginData(): void 
+	{
+		$this->username = $this->request->postParam('username');
+    $this->password = $this->request->postParam('password');
+	}
 
-$result = $stmt->fetch(PDO::FETCH_ASSOC);
-if ($result) {
-	$userId = $result['id'];
-	dump($userId);
-	$_SESSION = $result['userId'];
+	private function makeQuery(): void
+	{
+		$query = "SELECT users.id FROM users WHERE username = :username AND password = :password";
+		$stmt = $this->conn->prepare($query);
+		$stmt->bindParam(':username', $this->username);
+		$stmt->bindParam(':password', $this->password);
+		$stmt->execute();
+		$this->result = $stmt->fetch(PDO::FETCH_ASSOC);
+	}
 
-	echo 'Zostales zalogowany. Nastąpi przekierowanie do strony logowania.';
-	sleep(1.5);
-	header('Location: ../../templates/pages/main_menu.php');
-} else {
-	$userId = null;
-	echo 'Niepoprawne logowanie. Powrot do strony logowania.';
-	sleep(1.5);
-	header('Location: ../../index.php');
+	private function loginValidation(): void
+	{
+		if ($this->result) {
+			$userId = $this->result['id'];
+			$_SESSION['userId'] = $userId;
+			$_SESSION['logged'] = true;
+			header('Location: ../../templates/pages/main_menu.php');
+		} else {
+			$userId = null;
+			$_SESSION['logged'] = false;
+			header('Location: ../../index.php');
+		}
+	}
 }
-
-?>

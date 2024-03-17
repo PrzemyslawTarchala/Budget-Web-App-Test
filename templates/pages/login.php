@@ -13,4 +13,6 @@
 		<button type="submit">Sign in</button>
 	</div>
 
+	<a href="/?action=registration">Registration here</a>
+
 </form>
